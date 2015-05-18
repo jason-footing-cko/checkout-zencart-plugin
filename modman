@@ -1,0 +1,5 @@
+#Modman file for mapping checkoutapi 
+includes/languages/english/modules/payment/checkoutapipayment.php includes/languages/english/modules/payment/checkoutapipayment.php
+includes/modules/payment/checkoutapipayment.php includes/modules/payment/checkoutapipayment.php
+includes/modules/payment/checkoutapipayment includes/modules/payment/checkoutapipayment
+checkoutapipayment_webhook.php checkoutapipayment_webhook.php
