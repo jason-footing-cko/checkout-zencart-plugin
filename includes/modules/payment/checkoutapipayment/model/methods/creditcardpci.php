@@ -142,11 +142,11 @@ class model_methods_creditcardpci extends model_methods_Abstract
         $config['postedParam']['card']['expiryYear'] = $_POST['cc_expires_year'];
         $config['postedParam']['card']['cvv'] = $_POST['cc_cvv'];
         $config['postedParam']['card']['billingDetails']['addressLine1'] = $order->billing['street_address'];
-        $config['postedParam']['card']['billingDetails']['addressLine2'] = $order->billing['address2'];
+        $config['postedParam']['card']['billingDetails']['addressLine2'] = $order->billing['suburb'];
         $config['postedParam']['card']['billingDetails']['postcode'] = $order->billing['postcode'];
-        $config['postedParam']['card']['billingDetails']['country'] = $order->billing['country']['title'];
+        $config['postedParam']['card']['billingDetails']['country'] = $order->billing['country']['iso_code_2'];
         $config['postedParam']['card']['billingDetails']['city'] = $order->billing['city'];
-        $config['postedParam']['card']['billingDetails']['phone'] = $order->customer['telephone'];
+        $config['postedParam']['card']['billingDetails']['phone'] = array ('number' => $order->customer['telephone']);
 
         $this->_placeorder($config);
     }

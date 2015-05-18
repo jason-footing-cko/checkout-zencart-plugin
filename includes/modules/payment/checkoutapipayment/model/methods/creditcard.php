@@ -91,7 +91,6 @@ EOD;
                  customerEmail: '{$order->customer['email_address']}' ,
                  customerName: '{$order->customer['firstname']} {$order->customer['lastname']}',
                  namespace: 'CheckoutIntegration',
-                 namespace: 'CheckoutIntegration',
                  paymentToken:'{$paymentToken}',
                  value: "{$amountCents}",
                  currency: "{$order->info['currency']}",
@@ -160,8 +159,8 @@ EOD;
         global  $order,  $_POST,$messageStack;
         $config = array();
         $Api = CheckoutApi_Api::getApi(array('mode'=> MODULE_PAYMENT_CHECKOUTAPIPAYMENT_TRANSACTION_SERVER));
-        $amount = (int)$order->info['total'];
-        $amountCents = $amount *100;
+        $amount = $order->info['total'];
+        $amountCents = (int)($amount *100);
         $config['authorization'] = MODULE_PAYMENT_CHECKOUTAPIPAYMENT_SECRET_KEY;
         $config['mode'] = MODULE_PAYMENT_CHECKOUTAPIPAYMENT_TRANSACTION_SERVER;
 
@@ -180,9 +179,9 @@ EOD;
 
         $billingAddress = array (
                 'addressLine1'    => $order->billing['street_address'],
-                'addressLine2'    => $order->billing['address_line_2'],
+                'addressLine2'    => $order->billing['suburb'],
                 'postcode'        => $order->billing['postcode'],
-                'country'         => $order->billing['country']['title'],
+                'country'         => $order->billing['country']['iso_code_2'],
                 'city'            => $order->billing['city'],
                 'state'           => $order->billing['state'],
                 'phone'           => array('number' => $order->customer['telephone'])
@@ -190,20 +189,18 @@ EOD;
 
         $config['postedParam'] = array (
             'email'           =>    $order->customer['email_address'] ,
-            'name'           =>    "{$order->customer['firstname']} {$order->customer['lastname']}",
+            'name'            =>    "{$order->customer['firstname']} {$order->customer['lastname']}",
             'value'           =>    $amountCents,
             'currency'        =>    $order->info['currency'] ,
-
             'products'        =>    $products,
             'shippingDetails' =>
                 array (
                       'addressLine1'    =>    $order->delivery['street_address'],
-                      'addressLine2'    =>    $order->delivery['address_line_2'],
-                      'Postcode'        =>    $order->delivery['postcode'],
-                      'Country'         =>    $order->delivery['country']['title'],
-                      'City'            =>    $order->delivery['city'],
+                      'addressLine2'    =>    $order->delivery['suburb'],
+                      'postcode'        =>    $order->delivery['postcode'],
+                      'country'         =>    $order->delivery['country']['iso_code_2'],
+                      'city'            =>    $order->delivery['city'],
                       'phone'           =>    array('number' => $order->customer['telephone']),
-                      'recipientname'   =>    $order->delivery['firstname'].' '.$order->delivery['lastname']
                     )
             );
 
