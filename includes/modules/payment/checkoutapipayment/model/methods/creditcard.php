@@ -84,7 +84,7 @@ EOD;
         <script src="https://www.checkout.com/cdn/js/checkout.js" async ></script>
         <input type="hidden" name="cko-paymentToken" id="cko-paymentToken" value="{$paymentToken}" />
         <script type="text/javascript">
-
+            var reload = false;
             window.CKOConfig = {
                 publicKey: "{$publicKey}",
                  renderMode: 2,
@@ -97,12 +97,25 @@ EOD;
                  widgetContainerSelector: '.widget-container',
                  cardCharged: function(event){
                     fireEvent(document.getElementById('checkout_confirmation'),'submit');
-                }
-           };
+                },
+                lightboxDeactivated: function (event) {
+                  $('#btn_submit').removeAttr("disabled");
+                  if (reload) {
+                        window.location.reload();
+                  }
+                },
+                paymentTokenExpired: function (event) {
+                  reload = true;
+                },
+                invalidLightboxConfig: function (event) {
+                  reload = true;
+                 }
+          };
 
 
             window.addEventListener("load", function(event){
                 document.getElementById('btn_submit').addEventListener('click',function(event){
+                 $(this).attr('disabled','disabled');
                      event.preventDefault();
                      CheckoutIntegration.open();
                 },false);
