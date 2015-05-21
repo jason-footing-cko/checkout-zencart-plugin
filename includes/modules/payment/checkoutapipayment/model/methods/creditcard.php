@@ -3,6 +3,8 @@ class model_methods_creditcard extends model_methods_Abstract
 {
     var $code = 'checkoutapipayment';
     var $title = MODULE_PAYMENT_CHECKOUTAPIPAYMENT_TEXT_PUBLIC_TITLE;
+    var $gateway_mode = MODULE_PAYMENT_CHECKOUTAPIPAYMENT_TRANSACTION_SERVER;
+    
 
     public function javascript_validation()
     {
@@ -17,13 +19,26 @@ class model_methods_creditcard extends model_methods_Abstract
         $email = $order->customer['email_address'];
         $currency = $order->info['currency'];
         $publicKey = MODULE_PAYMENT_CHECKOUTAPIPAYMENT_PUBLISHABLE_KEY;
+        $localPayment = MODULE_PAYMENT_CHECKOUAPIPAYMENT_LOCALPAYMENT_ENABLE;
+        if ($this->gateway_mode == 'Live'){
+          $scriptSrc = "https://www.checkout.com/cdn/js/checkout.js";
+        } else {
+          $scriptSrc = "//sandbox.checkout.com/js/v1/checkout.js";
+        }
+        
+        if($localPayment == 'True'){
+          $localPaymentMode = 'mixed';
+        } else {
+          $localPaymentMode = 'card';
+        }
+
         $onFocus = ' onfocus="methodSelect(\'pmt-' . $this->code . '\')"';
         $paymentToken =  $this->getPaymentToken();
 
         $content = 
         <<<EOD
         <div class="widget-container"></div>
-        <script src="https://www.checkout.com/cdn/js/checkout.js" async ></script>
+        <script src="{$scriptSrc}" async ></script>
         <input type="hidden" name="cko-paymentToken" id="cko-paymentToken" value="{$paymentToken}" />
         <script type="text/javascript">
 
@@ -32,6 +47,7 @@ class model_methods_creditcard extends model_methods_Abstract
                  renderMode: 2,
                  paymentToken:'{$paymentToken}',
                  value: "{$amountCents}",
+                 paymentMode: "{$localPaymentMode}",
                  currency: "{$order->info['currency']}",
                  widgetContainerSelector: '.widget-container'
            }
@@ -66,6 +82,17 @@ EOD;
         $email = $order->customer['email_address'];
         $currency = $order->info['currency'];
         $publicKey = MODULE_PAYMENT_CHECKOUTAPIPAYMENT_PUBLISHABLE_KEY;
+        $localPayment = MODULE_PAYMENT_CHECKOUAPIPAYMENT_LOCALPAYMENT_ENABLE;
+        if ($this->gateway_mode == 'Live'){
+          $scriptSrc = "https://www.checkout.com/cdn/js/checkout.js";
+        } else {
+          $scriptSrc = "//sandbox.checkout.com/js/v1/checkout.js";
+        }
+        if($localPayment == 'True'){
+          $localPaymentMode = 'mixed';
+        } else {
+          $localPaymentMode = 'card';
+        }
         $onFocus = ' onfocus="methodSelect(\'pmt-' . $this->code . '\')"';
         $paymentToken =  $_POST['cko-paymentToken'];
 
@@ -81,7 +108,7 @@ EOD;
                 $content =
             <<<EOD
 	        <div class="widget-container" style="display:none"></div>
-        <script src="https://www.checkout.com/cdn/js/checkout.js" async ></script>
+        <script src="{$scriptSrc}" async ></script>
         <input type="hidden" name="cko-paymentToken" id="cko-paymentToken" value="{$paymentToken}" />
         <script type="text/javascript">
             var reload = false;
@@ -94,6 +121,7 @@ EOD;
                  paymentToken:'{$paymentToken}',
                  value: "{$amountCents}",
                  currency: "{$order->info['currency']}",
+                 paymentMode: "{$localPaymentMode}",
                  widgetContainerSelector: '.widget-container',
                  cardCharged: function(event){
                     fireEvent(document.getElementById('checkout_confirmation'),'submit');
