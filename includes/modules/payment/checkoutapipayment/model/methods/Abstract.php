@@ -29,45 +29,48 @@ abstract class model_methods_Abstract extends base {
     {
         global  $order,  $_POST;
         $config = array();
+        $Api = CheckoutApi_Api::getApi(
+                array( 'mode'          => MODULE_PAYMENT_CHECKOUTAPIPAYMENT_TRANSACTION_SERVER,
+                       'authorization' => MODULE_PAYMENT_CHECKOUTAPIPAYMENT_SECRET_KEY)
+        );
+        $amount = $order->info['total'];
+        $amountCents = $Api->valueToDecimal($amount, $order->info['currency']);
+        $config['authorization'] = MODULE_PAYMENT_CHECKOUTAPIPAYMENT_SECRET_KEY;
+        $config['mode'] = MODULE_PAYMENT_CHECKOUTAPIPAYMENT_TRANSACTION_SERVER;
+        $products = array();
+        $i = 1;
 
-            $amount = $order->info['total'];
-            $amountCents = (int) ($amount *100);
-            $config['authorization'] = MODULE_PAYMENT_CHECKOUTAPIPAYMENT_SECRET_KEY;
-            $config['mode'] = MODULE_PAYMENT_CHECKOUTAPIPAYMENT_TRANSACTION_SERVER;
-            $products = array();
-            $i = 1;
+        foreach($order->products as $product) {
 
-            foreach($order->products as $product) {
-
-                $products[] = array (
-                    'name'       =>    $product['name'],
-                    'sku'        =>    $product['id'],
-                    'price'      =>    $product['final_price'],
-                    'quantity'   =>    $product['qty'],
-                );
-                $i++;
-            }
-            $config['postedParam'] = array (
-                'email'           => $order->customer['email_address'] ,
-                'value'           => $amountCents,
-                'currency'        => $order->info['currency'] ,
-                'products'        => $products,
-                'shippingDetails' => array (
-                    'addressLine1'  =>  $order->delivery['street_address'],
-                    'addressLine2'  => $order->delivery['suburb'],
-                    'postcode'      =>  $order->delivery['postcode'],
-                    'country'       =>  $order->delivery['country']['iso_code_2'],
-                    'city'          =>  $order->delivery['city'],
-                    'phone'         =>  array('number' => $order->customer['telephone']),
-                 )
-
+            $products[] = array (
+                'name'       =>    $product['name'],
+                'sku'        =>    $product['id'],
+                'price'      =>    $product['final_price'],
+                'quantity'   =>    $product['qty'],
             );
+            $i++;
+        }
+        $config['postedParam'] = array (
+            'email'           => $order->customer['email_address'] ,
+            'value'           => $amountCents,
+            'currency'        => $order->info['currency'] ,
+            'products'        => $products,
+            'shippingDetails' => array (
+                'addressLine1'  =>  $order->delivery['street_address'],
+                'addressLine2'  => $order->delivery['suburb'],
+                'postcode'      =>  $order->delivery['postcode'],
+                'country'       =>  $order->delivery['country']['iso_code_2'],
+                'city'          =>  $order->delivery['city'],
+                'phone'         =>  array('number' => $order->customer['telephone']),
+             )
 
-            if (MODULE_PAYMENT_CHECKOUTAPIPAYMENT_TRANSACTION_METHOD == 'Authorize and Capture') {
-                $config = array_merge( $this->_captureConfig(),$config);
-            } else {
-                $config = array_merge( $this->_authorizeConfig(),$config);
-            }
+        );
+
+        if (MODULE_PAYMENT_CHECKOUTAPIPAYMENT_TRANSACTION_METHOD == 'Authorize and Capture') {
+            $config = array_merge( $this->_captureConfig(),$config);
+        } else {
+            $config = array_merge( $this->_authorizeConfig(),$config);
+        }
 
         return $config;
     }
@@ -133,6 +136,11 @@ abstract class model_methods_Abstract extends base {
     {
         global $insert_id, $customer_id, $stripe_result;
         if($this->_currentCharge) {
+            $Api = CheckoutApi_Api::getApi(
+                    array( 'mode'          => MODULE_PAYMENT_CHECKOUTAPIPAYMENT_TRANSACTION_SERVER,
+                           'authorization' => MODULE_PAYMENT_CHECKOUTAPIPAYMENT_SECRET_KEY)
+            );
+            
             $status_comment = array('Transaction ID: ' . $this->_currentCharge->getId(),
                 'Transaction has been process using "' . MODULE_PAYMENT_CHECKOUTAPIPAYMENT_TEXT_PUBLIC_TITLE .'" and paid with  card '. $this->_currentCharge->getCard()->getPaymentMethod(),
                 'Response code:' . $this->_currentCharge->getResponseCode(),
@@ -145,10 +153,7 @@ abstract class model_methods_Abstract extends base {
                 'comments' => implode("\n", $status_comment));
 
 
-            $Api = CheckoutApi_Api::getApi(
-                    array( 'mode'          => MODULE_PAYMENT_CHECKOUTAPIPAYMENT_TRANSACTION_SERVER,
-                           'authorization' => MODULE_PAYMENT_CHECKOUTAPIPAYMENT_SECRET_KEY)
-            );
+
 
             $chargeUpdated = $Api->updateTrackId($this->_currentCharge,$insert_id);
 
@@ -188,7 +193,15 @@ abstract class model_methods_Abstract extends base {
                 'MODULE_PAYMENT_CHECKOUAPIPAYMENT_LOCALPAYMENT_ENABLE',
                 'MODULE_PAYMENT_CHECKOUAPIPAYMENT_GATEWAY_TIMEOUT',
                 'MODULE_PAYMENT_CHECKOUAPIPAYMENT_AUTOCAPTIME',
-                'MODULE_PAYMENT_CHECKOUTAPIPAYMENT_SORT_ORDER'
+                'MODULE_PAYMENT_CHECKOUTAPIPAYMENT_SORT_ORDER',
+                'MODULE_PAYMENT_CHECKOUAPIPAYMENT_GATEWAY_LOGO_URL',
+                'MODULE_PAYMENT_CHECKOUAPIPAYMENT_GATEWAY_THEME_COLOR',
+                'MODULE_PAYMENT_CHECKOUAPIPAYMENT_GATEWAY_BUTTON_COLOR',
+                'MODULE_PAYMENT_CHECKOUAPIPAYMENT_GATEWAY_ICON_COLOR',
+                'MODULE_PAYMENT_CHECKOUAPIPAYMENT_GATEWAY_CURRENCY_FORMAT',
+                'MODULE_PAYMENT_CHECKOUAPIPAYMENT_GATEWAY_IS_3D',
+                'MODULE_PAYMENT_CHECKOUAPIPAYMENT_GATEWAY_MIN_AMOUNT_3D',
+            
         );
     }
     public function remove() {
@@ -240,6 +253,21 @@ abstract class model_methods_Abstract extends base {
         $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Set auto capture time', 'MODULE_PAYMENT_CHECKOUAPIPAYMENT_AUTOCAPTIME', '0', 'When transaction is set to authorize and caputure , the gateway will use this time to caputure the transaction.', '6', '0', now())");
         $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, use_function, set_function, date_added) values ('Review Order Status', 'MODULE_PAYMENT_CHECKOUAPIPAYMENT_REVIEW_ORDER_STATUS_ID', '0', 'Set the status of orders flagged as being under review to this value', '6', '0', 'zen_get_order_status_name', 'zen_cfg_pull_down_order_statuses(', now())");
         $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Sort order of display.', 'MODULE_PAYMENT_CHECKOUTAPIPAYMENT_SORT_ORDER', '0', 'Sort order of display. Lowest is displayed first.', '6', '0', now())");
+        
+        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Logo Url', 'MODULE_PAYMENT_CHECKOUAPIPAYMENT_GATEWAY_LOGO_URL', '', 'Display your logo on checkout.js (Max size: 180 x 36)', '6', '0', now())");
+        
+        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Theme color ', 'MODULE_PAYMENT_CHECKOUAPIPAYMENT_GATEWAY_THEME_COLOR', '', 'Set theme color for checkout.js', '6', '0', now())");
+        
+        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Button color', 'MODULE_PAYMENT_CHECKOUAPIPAYMENT_GATEWAY_BUTTON_COLOR', '', 'Set color for Pay now button', '6', '0', now())");
+                
+        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Icon color', 'MODULE_PAYMENT_CHECKOUAPIPAYMENT_GATEWAY_ICON_COLOR', '', 'Set icon color for checkout.js', '6', '0', now())");
+        
+        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Currency format', 'MODULE_PAYMENT_CHECKOUAPIPAYMENT_GATEWAY_CURRENCY_FORMAT', 'Code', 'Display currency code or currency symbol on the checkout.js', '6', '0','zen_cfg_select_option(array(\'Code\', \'Symbol\'), ', now())");
+                
+        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Is 3D?', 'MODULE_PAYMENT_CHECKOUAPIPAYMENT_GATEWAY_IS_3D', 'No', 'User will also be required to enter a password to complete the process.', '6', '0','zen_cfg_select_option(array(\'Yes\', \'No\'), ', now())");
+        
+        $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Minumum amount for 3d secure transaction', 'MODULE_PAYMENT_CHECKOUAPIPAYMENT_GATEWAY_MIN_AMOUNT_3D', '', 'Set minimum amount for 3d transaction', '6', '0', now())");
+    
     }
 
     function format_raw($number, $currency_code = '', $currency_value = '') {
